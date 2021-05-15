@@ -49,6 +49,11 @@ void loop() {
     // calls until text data is sent again.
     String str = phone.getText();
 
+    // If a text from the phone was sent print it to the serial monitor
+    if (str != "") {
+        Serial.println(str);
+    }
+
     // Throttle and steering values go from 0 to 99.
     // When throttle and steering values are at 99/2 = 49, the joystick is at center.
     throttle = phone.getThrottle();
@@ -84,18 +89,12 @@ void loop() {
         prevSteering = steering;
     }
 
-    // If a text from the phone was sent print it to the serial monitor
-    if (str != "") {
-        Serial.println(str);
-
-    }
-
     // Send string from serial command line to the phone. This will alert the user.
     if (Serial.available()) {
         Serial.write("send: ");
-        String str = Serial.readString();
-        phone.sendMessage(str); // phone.sendMessage(str) sends the text to the phone.
-        Serial.print(str);
+        String strUsbSer = Serial.readString();
+        phone.sendMessage(strUsbSer); // phone.sendMessage(strUsbSer) sends the text to the phone.
+        Serial.print(strUsbSer);
         Serial.write('\n');
     }
 
