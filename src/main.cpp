@@ -16,8 +16,14 @@ const int BLUETOOTH_RX_PIN = 11; // Receive AT BT FROM Arduino
 // Avoiding use of pin 13 because we may use the on board LED so I think that pin has to remain unused for that.
 // TODO: Clarify on LED and pin 13.
 
+// Initialize variables for app controls
+int prevThrottle = 49;
+int prevSteering = 49;
+int throttle, steering, sliderVal, button, sliderId;
+
 SoftwareSerial bluetooth(BLUETOOTH_TX_PIN, BLUETOOTH_RX_PIN);
 ArduinoBlue phone(bluetooth); // pass reference of bluetooth object to ArduinoCommander.
+
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -27,32 +33,76 @@ void setup() {
     Serial.begin(BAUD_RATE);
     bluetooth.begin(BAUD_RATE);
 
+    // delay just in case bluetooth module needs time to "get ready".
+    delay(200);
+
     Serial.println("setup complete");
 }
 
 
 void loop() {
-    // Four quick flashes then a long flash
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(20);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(20);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(20);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(20);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(20);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(20);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(20);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(20);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(600);
+    // ID of the button pressed.
+    button = phone.getButton();
+
+    // Returns the text data sent from the phone.
+    // After it returns the latest data, empty string "" is sent in subsequent.
+    // calls until text data is sent again.
+    String str = phone.getText();
+
+    // Throttle and steering values go from 0 to 99.
+    // When throttle and steering values are at 99/2 = 49, the joystick is at center.
+    throttle = phone.getThrottle();
+    steering = phone.getSteering();
+
+    // ID of the slider moved.
+    sliderId = phone.getSliderId();
+
+    // Slider value goes from 0 to 200.
+    sliderVal = phone.getSliderVal();
+
+    // Display button data whenever its pressed.
+    if (button != -1) {
+        Serial.print("Button: ");
+        Serial.println(button);
+    }
+
+    // Display slider data when slider moves
+    if (sliderId != -1) {
+        Serial.print("Slider ID: ");
+        Serial.print(sliderId);
+        Serial.print("\tValue: ");
+        Serial.println(sliderVal);
+    }
+
+    // Display throttle and steering data if steering or throttle value is changed
+    if (prevThrottle != throttle || prevSteering != steering) {
+        Serial.print("Throttle: ");
+        Serial.print(throttle);
+        Serial.print("\tSteering: ");
+        Serial.println(steering);
+        prevThrottle = throttle;
+        prevSteering = steering;
+    }
+
+    // If a text from the phone was sent print it to the serial monitor
+    if (str != "") {
+        Serial.println(str);
+
+    }
+
+    // Send string from serial command line to the phone. This will alert the user.
+    if (Serial.available()) {
+        Serial.write("send: ");
+        String str = Serial.readString();
+        phone.sendMessage(str); // phone.sendMessage(str) sends the text to the phone.
+        Serial.print(str);
+        Serial.write('\n');
+    }
+
+//    delay(500);
+//    digitalWrite(LED_BUILTIN, LOW);
+//    delay(500);
+
 }
 
 /**
