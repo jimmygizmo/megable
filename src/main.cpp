@@ -8,8 +8,10 @@ Servo myservo;  // create servo object to control a servo
 const unsigned long BAUD_RATE = 9600;
 
 const int ANALOG_SERVO_PWM_PIN = 5;
-
-int servo_angle = 0;  // TODO: Maybe don't declare it here. Let's see where it is really used tho.
+const int ANALOG_SERVO_MININUM_ANGLE_VALUE = 3; // To stop chatter, we'll limit the lowest angle value to this.
+// The servo minimum angle at which chatter goes away may vary slightly from servo to servo.
+const int ANALOG_SERVO_MAXIMUM_ANGLE_VALUE = 170; // Actual servo travel is almost 195 degrees and we will limit it.
+// In this case we will just stop it where we have measured 180 degrees of travel and this is the value above.
 
 // The bluetooth tx and rx pins must be supported by software serial.
 // Visit https://www.arduino.cc/en/Reference/SoftwareSerial for unsupported pins.
@@ -82,6 +84,8 @@ void loop() {
     }
 
     // Display slider data when slider moves
+    int servo_angle;
+    int adjusted_servo_angle;
     if (sliderId != -1) {
         Serial.print("Slider ID: ");
         Serial.print(sliderId);
@@ -90,8 +94,17 @@ void loop() {
         servo_angle = map(sliderVal, 0, 200, 0, 180);  // scale to use with the servo (value between 0 and 180)
         Serial.print("\tServo angle: ");
         Serial.println(servo_angle);
-        myservo.write(servo_angle);  // sets the servo position according to the scaled value
-        delay(100);
+        if ( servo_angle < ANALOG_SERVO_MININUM_ANGLE_VALUE ) {
+            adjusted_servo_angle = ANALOG_SERVO_MININUM_ANGLE_VALUE;
+        } else if ( servo_angle > ANALOG_SERVO_MAXIMUM_ANGLE_VALUE ) {
+            adjusted_servo_angle = ANALOG_SERVO_MAXIMUM_ANGLE_VALUE;
+        } else {
+            adjusted_servo_angle = servo_angle;
+        }
+        Serial.print("\tAdjusted servo angle: ");
+        Serial.println(adjusted_servo_angle);
+        myservo.write(adjusted_servo_angle);  // sets the servo position according to the scaled and adjusted value
+        // delay(100);  // Experimental delay does not seem to affect the chattering during slow value change.
     }
 
     // Display throttle and steering data if steering or throttle value is changed
