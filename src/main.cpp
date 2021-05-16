@@ -1,8 +1,15 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 #include <ArduinoBlue.h>
+#include <Servo.h>
+
+Servo myservo;  // create servo object to control a servo
 
 const unsigned long BAUD_RATE = 9600;
+
+const int ANALOG_SERVO_PWM_PIN = 5;
+
+int servo_angle = 0;  // TODO: Maybe don't declare it here. Let's see where it is really used tho.
 
 // The bluetooth tx and rx pins must be supported by software serial.
 // Visit https://www.arduino.cc/en/Reference/SoftwareSerial for unsupported pins.
@@ -28,6 +35,8 @@ ArduinoBlue phone(bluetooth); // pass reference of bluetooth object to ArduinoCo
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
+    myservo.attach(ANALOG_SERVO_PWM_PIN);  // attaches the servo on pin 9 to the servo object
+
     // Start serial communications.
     // The baud rate must be the same for both serials.
     Serial.begin(BAUD_RATE);
@@ -41,6 +50,7 @@ void setup() {
 
 
 void loop() {
+    // delay(200); // Experimental delay had no effect on the bad servo chattering.
     // ID of the button pressed.
     button = phone.getButton();
 
@@ -77,6 +87,11 @@ void loop() {
         Serial.print(sliderId);
         Serial.print("\tValue: ");
         Serial.println(sliderVal);
+        servo_angle = map(sliderVal, 0, 200, 0, 180);  // scale to use with the servo (value between 0 and 180)
+        Serial.print("\tServo angle: ");
+        Serial.println(servo_angle);
+        myservo.write(servo_angle);  // sets the servo position according to the scaled value
+        delay(100);
     }
 
     // Display throttle and steering data if steering or throttle value is changed
