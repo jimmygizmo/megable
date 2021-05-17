@@ -7,7 +7,9 @@ Servo myservo;  // create servo object to control a servo
 
 const unsigned long BAUD_RATE = 9600;
 
-const int ANALOG_SERVO_AS1_PWM_PIN = 5;  // On the Mega2560, pin 5 is a PWM pin.
+const int ANALOG_SERVO_AS1_PWM_PIN = 54;
+// On the Mega2560: pin 5 is a PWM pin. pin 54 is analog 0.
+// Servo chatter while moving problem seems worse on pin 5 as compared to pin 54. Inconclusive.
 
 const int ANALOG_SERVO_AS1_MINIMUM_ANGLE = 4; // To minimize or stop chatter at the minimum servo position,
 // we'll limit the lowest angle value to the value configured here. This value may vary slightly depending on
@@ -16,15 +18,11 @@ const int ANALOG_SERVO_AS1_MINIMUM_ANGLE = 4; // To minimize or stop chatter at 
 const int ANALOG_SERVO_AS1_MAXIMUM_ANGLE = 175; // Actual servo travel is almost 195 physical degrees in my case,
 // so we will limit the travel in code to right at about 180-182 degrees. It turns out that having that extra travel
 // (15 degrees extra to play with) will also help with eliminating chatter that always seems to occur with all
-// servos at or near their minimum position.
-// TODO: Address the semantics/meaning of the 'ANGLE' in the variable name now at this point. Since we know
-// most servos can be very inaccurate in terms of true angle values, we might want to just call this 'position'
-// and then mention in a few places that it roughly corresponds to angle, but that we are modifying (limiting
-// and or scaling etc.) values to achieve the desired behavior and simplest/clearest code as well.
-// So the TODO might be to just replace the word 'ANGLE' with 'POSITION' and add some appropriate comments.
-// The terminology 'ANGLE' can be used near the input and more accurately this is 'DESIRED ANGLE' or 'REQUESTED ANGLE'.
-// It is good to pay attention to the semantics of variable naming. Downstream developers will thank you for it and
-// you will avoid confusion and even bugs by have well-named variables, objects, functions, classes etc.
+// servos at or near their minimum position. NOTE: The term 'ANGLE' in the variable names is never exact. It refers
+// to a decimal value that approximates the desired angular position of the servo which is highly subjective and varies
+// widely between servos and conditions. Additionally, we may modify this value during code execution to limit or
+// scale it among other things. The only true 'angle' of the position of a servo is one you physically measure and
+// calibrate for and even then there will be some variance during operation.
 
 const int ANALOG_SERVO_AS1_INITIAL_ANGLE = ANALOG_SERVO_AS1_MINIMUM_ANGLE;  // initialize at the minimum angle
 
@@ -32,13 +30,13 @@ const int ANALOG_SERVO_AS1_INITIAL_ANGLE = ANALOG_SERVO_AS1_MINIMUM_ANGLE;  // i
 // Visit https://www.arduino.cc/en/Reference/SoftwareSerial for unsupported pins.
 // * Checking this doc shows that on the Mega 2560, we are OK to use both pins 10 and 11 for either RX or TX.
 // Bluetooth TX -> Arduino D8
-const int BLUETOOTH_TX_PIN = 10; // Transmit FROM BT TO Arduino
-const int BLUETOOTH_RX_PIN = 11; // Receive AT BT FROM Arduino
+const int BLUETOOTH_TX_PIN = 10; // Transmit FROM the Bluetooth module TO Arduino
+const int BLUETOOTH_RX_PIN = 11; // Receive AT the Bluetooth module FROM Arduino
 // BLUETOOTH_RX_PIN is the one which you likely have your voltage divider applied to, in order to convert the Arduino
 // logic out at 5V down to the HM-10 logic in at 3.3V. (Better have this voltage divider or you may fry your HM-10.)
 
-// Avoiding use of pin 13 because we may use the on board LED so I think that pin has to remain unused for that.
-// TODO: Clarify on LED and pin 13.
+// Avoiding use of pin 13 because we may use the on board LED so I think pin 13 has to remain unused for that.
+// TODO: Clarify details on LED and pin 13.
 
 // Initialize variables for app controls
 int prevThrottle = 49;
@@ -115,6 +113,7 @@ void loop() {
         servo_angle = map(sliderVal, 0, 200, 0, 180);  // scale to use with the servo (value between 0 and 180)
         Serial.print("\tServo angle: ");
         Serial.println(servo_angle);
+
         if ( servo_angle < ANALOG_SERVO_AS1_MINIMUM_ANGLE ) {
             adjusted_servo_angle = ANALOG_SERVO_AS1_MINIMUM_ANGLE;
         } else if ( servo_angle > ANALOG_SERVO_AS1_MAXIMUM_ANGLE ) {
@@ -122,10 +121,11 @@ void loop() {
         } else {
             adjusted_servo_angle = servo_angle;
         }
+
         Serial.print("\tAdjusted servo angle: ");
         Serial.println(adjusted_servo_angle);
         myservo.write(adjusted_servo_angle);  // sets the servo position according to the scaled and adjusted value
-        // delay(100);  // Experimental delay does not seem to affect the chattering during slow value change.
+        delay(15);  // Give a little time for servo movement to occur. Such a delay might need to be tuned.
     }
 
     // Display throttle and steering data if steering or throttle value is changed
@@ -147,17 +147,11 @@ void loop() {
         Serial.write('\n');
     }
 
+
+//    old code from flashing the LED
 //    delay(500);
 //    digitalWrite(LED_BUILTIN, LOW);
 //    delay(500);
-
-// Experimental delay to try to get rid of "chatter during slow movement", which is the big problem at the moment.
-// (Very soon now I will start investigating electromagnetic interference, possibly from the Bluetooth traffic,
-// affecting the servo signal or the servo in some other way. Currently these are very close to each other and the
-// servo wiring is long and going in some big loops nearby so interference is a very real possibility.
-//delay(500);
-    // UPDATE on interference. Servo and wires were moved far away from BLE module and there was no change.
-    // Interference might not be out problem. Maybe next look at interrupts on PWM pin 5.
 
 }
 
