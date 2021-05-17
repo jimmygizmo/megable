@@ -13,9 +13,10 @@ const int ANALOG_SERVO_AS1_MINIMUM_ANGLE = 4; // To minimize or stop chatter at 
 // we'll limit the lowest angle value to the value configured here. This value may vary slightly depending on
 // the individual servo, the exact voltage being used and other factors. Tune/adjust this for each specific servo.
 
-const int ANALOG_SERVO_AS1_MAXIMUM_ANGLE = 170; // Actual servo travel is almost 195 degrees in my case, so we will
-// limit it to right at about 180-182 degrees and having that extra travel will also help with eliminating chatter
-// that always seems to occur with all servos at or near their minimum position.
+const int ANALOG_SERVO_AS1_MAXIMUM_ANGLE = 175; // Actual servo travel is almost 195 physical degrees in my case,
+// so we will limit the travel in code to right at about 180-182 degrees. It turns out that having that extra travel
+// (15 degrees extra to play with) will also help with eliminating chatter that always seems to occur with all
+// servos at or near their minimum position.
 // TODO: Address the semantics/meaning of the 'ANGLE' in the variable name now at this point. Since we know
 // most servos can be very inaccurate in terms of true angle values, we might want to just call this 'position'
 // and then mention in a few places that it roughly corresponds to angle, but that we are modifying (limiting
@@ -154,7 +155,9 @@ void loop() {
 // (Very soon now I will start investigating electromagnetic interference, possibly from the Bluetooth traffic,
 // affecting the servo signal or the servo in some other way. Currently these are very close to each other and the
 // servo wiring is long and going in some big loops nearby so interference is a very real possibility.
-delay(200);
+//delay(500);
+    // UPDATE on interference. Servo and wires were moved far away from BLE module and there was no change.
+    // Interference might not be out problem. Maybe next look at interrupts on PWM pin 5.
 
 }
 
@@ -172,4 +175,18 @@ delay(200);
  * new CMakeListsUser.txt file:
  * if (CMAKE_BUILD_TYPE MATCHES "megaatmega2560")
  *     include_directories("${CMAKE_CURRENT_LIST_DIR}/.pio/libdeps/megaatmega2560/ArduinoBlue/src")
+ *
+ * Important realization about the interaction. I have seen items in CMake files which refer to items inside of
+ * the .pio directory structure, specifically the installed libdeps files for added (3rd party) libraries. Also,
+ * Although the build and upload/run buttons are configured via the PlatformIO plugin, the log output when they
+ * are run show reference to the cmake installed with the CLion.app inside the bin directory of the app Contents.
+ * (Just a side-note, but I also have a slightly /usr/local/bin/cmake which does not appear to be used by CLion
+ * and I am guessing it comes from Homebrew and could be a dependency for multiple things.)
+ * (Another side-note: I cannot rule out that some mode of using PlatformIO might use this /usr/local/bin/cmake.)
+ * So the bottom line is I am seeing that BOTH PlatformIO AND CMake are being used by CLion+PlatformIO projects
+ * and currently, when you add a 3rd-party library via the PlatformIO Home/GUI (I don't personally add libraries
+ * any other way yet) well then you will have to manually update your own CMakeListsUser.txt file as noted above.
+ *
+ * I will continue to update here with relevant things I discover about using CLion for Arduino/embedded development.
+ *
  */
